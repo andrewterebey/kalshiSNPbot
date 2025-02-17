@@ -25,14 +25,12 @@ def getMarketData(token, series_ticker, min_close_ts=None):
         print(response.text)
         return None
 
-def generateMarketTicker(target_date):
-    current_year = target_date.strftime("%y")
-    formatted_date = target_date.strftime(f"{current_year}%b%d").upper()
-    market_ticker = f"INX-{formatted_date}"
-    return market_ticker
-
 def getTargetDate(days_ahead):
     return date.today() + timedelta(days=days_ahead)
+
+def filterMarketsByDate(markets, target_date):
+    target_date_str = target_date.strftime("%y%b%d").upper()
+    return [market for market in markets if target_date_str in market['ticker']]
 
 def getMarketTicker(current_price, markets):
     break_even_ticker = None
@@ -69,19 +67,19 @@ def main():
     password = os.getenv('PASSWORD')
     token = session.kalshiLogin(username, password)
 
-    target_date = getTargetDate(1)
-    market_ticker = generateMarketTicker(target_date)
+    target_date = getTargetDate(0)
 
     min_close_ts = int(datetime.timestamp(datetime.combine(target_date - timedelta(days=1), datetime.min.time())))
     market_data = getMarketData(token, "INX", min_close_ts)
 
     if market_data:
-        current_price = 5566.75  # Replace with the actual current S&P 500 price
-        break_even_ticker, profit_ticker = getMarketTicker(current_price, market_data['markets'])
+        current_price = 5590.23  # Replace with the actual current S&P 500 price
+        filtered_markets = filterMarketsByDate(market_data['markets'], target_date)
+        break_even_ticker, profit_ticker = getMarketTicker(current_price, filtered_markets)
         
         if break_even_ticker and profit_ticker:
-            break_even_yes_ask = getYesAskPrice(break_even_ticker, market_data['markets'])
-            profit_yes_ask = getYesAskPrice(profit_ticker, market_data['markets'])
+            break_even_yes_ask = getYesAskPrice(break_even_ticker, filtered_markets)
+            profit_yes_ask = getYesAskPrice(profit_ticker, filtered_markets)
 
             print(f"Break-even Ticker: {break_even_ticker}, Yes Ask Price: {break_even_yes_ask}")
             print(f"Profit Ticker: {profit_ticker}, Yes Ask Price: {profit_yes_ask}")

@@ -28,15 +28,15 @@ def calculateContractsToBuy(budget, ask_price):
     # Calculate the number of contracts to buy
     if ask_price > 0:
         count = budget * 100 // ask_price
-        return int(count)
+        return int(count)   
     else:
         raise ValueError("Invalid ask price")
 
 def main():
     # Example parameters
     total_budget = 100.0  # Total budget in dollars
-    ask_price_break_even = 50.0  # Ask price for the break-even bet in cents
-    ask_price_profit = 34.0  # Ask price for the profit bet in cents
+    ask_price_break_even = 54.0  # Ask price for the break-even bet in cents
+    ask_price_profit = 20.0  # Ask price for the profit bet in cents
 
     try:
         x, y, return_rate_break_even, return_rate_profit = calculateBets(total_budget, ask_price_break_even, ask_price_profit)

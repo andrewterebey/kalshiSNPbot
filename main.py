@@ -11,7 +11,7 @@ import makebet
 def main():
     try:
         #data
-        spx_price = 5564.21
+        spx_price = 5579.21
 
         #Login and get token
         env_path = Path('.') / 'info.env'
@@ -22,46 +22,45 @@ def main():
 
         #get account balance
         account_balance = session.getAccountBalance(token)
-        money_risked = account_balance * 0.30
-        print(account_balance)
+        money_risked = account_balance * 0.4
+        print("Account balance: " + str(account_balance))
+        print()
 
         #get days ahead - 1
-        target_date = market.getTargetDate(1)
-    
-        #get date and market data
+        target_date = market.getTargetDate(0)
+
         min_close_ts = int(datetime.timestamp(datetime.combine(target_date - timedelta(days=1), datetime.min.time())))
         market_data = market.getMarketData(token, "INX", min_close_ts)
-    
-        #retrieve tickers and ask prices
-        safety_ticker, profit_ticker = market.getMarketTicker(spx_price, market_data['markets'])
-        safety_ticker_ask = market.getYesAskPrice(safety_ticker, market_data['markets'])
-        profit_ticker_ask = market.getYesAskPrice(profit_ticker, market_data['markets'])
+
+        if market_data:
+            current_price = 5571.75  # Replace with the actual current S&P 500 price
+            filtered_markets = market.filterMarketsByDate(market_data['markets'], target_date)
+            safety_ticker, profit_ticker = market.getMarketTicker(current_price, filtered_markets)
+            
+            if safety_ticker and profit_ticker:
+                safety_yes_ask = market.getYesAskPrice(safety_ticker, filtered_markets)
+                profit_yes_ask = market.getYesAskPrice(profit_ticker, filtered_markets)
+
+                print(f"Break-even Ticker: {safety_ticker}, Yes Ask Price: {safety_yes_ask}")
+                print(f"Profit Ticker: {profit_ticker}, Yes Ask Price: {profit_yes_ask}")
+            else:
+                print("No suitable tickers found.")
 
         try:
-            safety_bet_amount, profit_bet_amount, return_rate_safety, return_rate_profit = mathbet.calculateBets(int(money_risked), safety_ticker_ask, profit_ticker_ask)
+            safety_bet_amount, profit_bet_amount, return_rate_safety, return_rate_profit = mathbet.calculateBets(int(money_risked), safety_yes_ask, profit_yes_ask)
         except ValueError as e:
             print(f"Error in calculating bets: {e}")
             return
-
-
-        # Print calculated values
-        print()
-        print(target_date)
-        print(safety_ticker)
-        print(profit_ticker)
-   
-        print(safety_ticker_ask)
-        print(profit_ticker_ask)
-        print()
         #mathbet.mathbetTest(int(money_risked), safety_ticker_ask, profit_ticker_ask)
 
         confirm = input("y/n: ")
-        if confirm == "y" and return_rate_profit > safety_bet_amount:
+        confirm2 = input("are you sure? y/n ")
+        if confirm == "y" and confirm2 == "y":
             print("Trade Placed Sucessfully")
             print("~~~~~~~~~~~~~~~~~~~~~~~~")
-            makebet.makeTrade(token, safety_ticker, mathbet.calculateContractsToBuy(safety_bet_amount, safety_ticker_ask))
+            makebet.makeTrade(token, safety_ticker, mathbet.calculateContractsToBuy(safety_bet_amount, safety_yes_ask))
             print("safety projected return: " + str(return_rate_safety))
-            makebet.makeTrade(token, profit_ticker, mathbet.calculateContractsToBuy(profit_bet_amount, profit_ticker_ask))
+            makebet.makeTrade(token, profit_ticker, mathbet.calculateContractsToBuy(profit_bet_amount, profit_yes_ask))
             print("profit projected return: " + str(return_rate_profit))
             print("Total profit: " + str(return_rate_profit - safety_bet_amount))
         else:
